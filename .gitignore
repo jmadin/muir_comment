@@ -1,0 +1,3 @@
+# Files and directories to ignore
+/doc
+.DS_Store
