@@ -7,3 +7,5 @@ The data files in the `data` folder are the files published by Muir et al. at Dr
 The `analysis.r` file runs R code that loads the data files, re-analyses the data as described in the pre-print, and makes the figure in the `figs` folder.
 
 Required R packages are `lqmm` and `quantreg`.
+
+![](figs/muir_species_rq.png)
