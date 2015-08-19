@@ -71,12 +71,34 @@ for (i in spp_rm) {
 }
 
 rq1 <- rq(Depth ~ lat:Species + lat_sq:Species + Species, tau=0.975, data=dat2)
-rq2 <- rq(Depth ~ lat:Species + Species, tau=0.975, data=dat2)
-rq3 <- rq(Depth ~ Species, tau=0.975, data=dat2)
 
-AIC(rq1) # 93133.17, best for fixed latitude-species effects model
-AIC(rq2) # 93809.55
-AIC(rq3) # 94303.82
+AIC(rq1) # 93133.17
+
+rq1_coefs <- summary(rq1)$coef # Gives warning: In summary.rq(rq1) : 1358 non-positive fis
+1358/dim(dat2)[1] # ~11% non-positive fis relative to replicate is not considered large, see FAQ for quantreg
+
+# Nonetheless, see if estimates are similar to running quantreg on each species separately
+
+rq2_coefs <- c()
+for (s in sort(unique(dat2$Species))) {
+  rq_temp <- rq(Depth ~ lat + lat_sq, tau=0.975, data=dat2[dat2$Species == s,])
+  rq2_coefs <- rbind(rq2_coefs, rq_temp$coef)
+}
+
+plot(rq2_coefs[2:50,1], as.vector(rq1_coefs[2:50,1]))
+plot(rq2_coefs[,2], as.vector(rq1_coefs[51:100,1]))
+plot(rq2_coefs[,3], as.vector(rq1_coefs[101:150,1]))
+
+# Estimates scale the same regardless of if species analysed separately or in same rq analysis
+
+# Tally concave up and down
+
+sum(rq1_coefs[101:150,1] > 0 & rq1_coefs[101:150,4] < 0.05) # 4 significant quadratic and opposite of Muir
+sum(rq1_coefs[101:150,1] < 0 & rq1_coefs[101:150,4] < 0.05) # 17 significnat quadratic and follow Muir
+sum(rq1_coefs[101:150,4] > 0.05)                            # 29 no significant quadratic pattern
+
+sum(rq1_coefs[101:150,1] < 0) # 38 Number following Muir et al. pattern
+sum(rq1_coefs[101:150,1] > 0) # 12 (24%) number opposite pattern
 
 # Make a figure of species effects centered at equator
 pdf("figs/muir_species_rq.pdf", height=5, width=8)
@@ -89,6 +111,9 @@ pdf("figs/muir_species_rq.pdf", height=5, width=8)
   for (i in unique(sort(dat2$Species))) {
     ss = seq(round(min(dat2$lat[dat2$Species==i])), round(max(dat2$lat[dat2$Species==i])), 0.5)
     pp <- predict(rq1, list(lat=ss, lat_sq=ss^2, Species=rep(i, length(ss))))
+    # temp <- dat2[dat2$Species == i,]
+    # rq_temp <- rq(Depth ~ lat + lat_sq, tau=0.975, data=temp)
+    # pp <- predict(rq_temp, list(lat=ss, lat_sq=ss^2))
     ppp <- pp - pp[which(ss==35)]
     lines(ss-35, -ppp, col=rgb(0, 0, 0, 0.3))
   }
