@@ -1,6 +1,6 @@
 # Comment on "Limited scope for latitudinal extension of reef corals"
 
-The data, analysis and figure for our comment on Muir et al. (2015) Science (http://www.sciencemag.org/content/348/6239/1135.abstract). The comment was rejected based on Muir et al.'s response to it, and so we have posted it as a pre-print at PeerJ while we work out the next step (http://).
+The data, analysis and figure for our comment on Muir et al. (2015) Science (http://www.sciencemag.org/content/348/6239/1135.abstract). The comment was rejected by Science based on Muir et al.'s response to it, and so we will submit the piece to Global Ecology and Biogeography.
 
 The data files in the `data` folder are the files published by Muir et al. at Dryad (https://datadryad.org/resource/doi:10.5061/dryad.3b568).
 
