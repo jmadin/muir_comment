@@ -19,41 +19,48 @@ dat <- dat[dat$Species != "I. togianensis",]
 dat <- dat[dat$Species != "A. russelli",]
 length(unique(dat$Species))
 
-# Center latitude at 35 to avoid dealing with negatives
-dat$lat <- dat$Latitude + 35
+# Create variables for analysis
+dat$lat <- dat$Latitude
 
 # Create new latitude squared variable
 dat$lat_sq <- dat$lat^2
 
-# Load the package used by Muir et al. for random effect in a quantile regression model
+# Load the package used by Muir et al. for random effect in a quantile regression model, default is 
 library(lqmm)
 
 # The basic Muir et al. model
-rqm1 <- lqmm(Depth ~ lat + lat_sq, random = ~ 1, group=Species, tau=0.975, data=dat, control = lqmmControl(method = "df", UP_max_iter = 200))
+rqm1 <- lqmm(Depth ~ lat + lat_sq, random = ~ 1, group=Species, tau=0.975, data=dat, control = lqmmControl(method = "df", LP_max_iter = 2000, UP_max_iter = 2000))
 
 # Quick check to see if their model best fixed-effects
 rqm2 <- lqmm(Depth ~ lat, random = ~ 1, group=Species, tau=0.975, data=dat, control = lqmmControl(method = "df", UP_max_iter = 200))
 rqm3 <- lqmm(Depth ~ 1, random = ~ 1, group=Species, tau=0.975, data=dat, control = lqmmControl(method = "df", UP_max_iter = 200))
 
-AIC(rqm1) # 110324.7, best
-AIC(rqm2) # 110816.9
+AIC(rqm1) # 110724.6, indeed, Muir et al. quadratic model is best with only species random intercept
+AIC(rqm2) # 111002.2
 AIC(rqm3) # 111020.4
 
-# Check Muir et al. assumption about latitude-species random effects (see our comment for justification)
+summary(rqm1) # Significant quadratic effect over all species
 
-rqm4 <- lqmm(Depth ~ lat + lat_sq, random = ~ 1 + lat, group=Species, tau=0.975, data=dat, control = lqmmControl(method = "df", UP_max_iter = 200))
-rqm5 <- lqmm(Depth ~ lat + lat_sq, random = ~ 1 + lat + lat_sq, group=Species, tau=0.975, data=dat, control = lqmmControl(method = "df", UP_max_iter = 200))
+# Check Muir et al. assumption about latitude-species random effects (see our paper for justification)
+
+rqm4 <- lqmm(Depth ~ lat + lat_sq, random = ~ 1 + lat, group=Species, tau=0.975, data=dat, control = lqmmControl(method = "df", LP_max_iter = 2000, UP_max_iter = 2000))
+rqm5 <- lqmm(Depth ~ lat + lat_sq, random = ~ 1 + lat + lat_sq, group=Species, tau=0.975, data=dat, control = lqmmControl(method = "df", LP_max_iter = 2000, UP_max_iter = 2000))
+
+AIC(rqm4) # 109725
+AIC(rqm5) # 109703.3, AIC is 621.4 better than rqm1
+
+summary(rqm5)
 
 AIC(rqm4) # 109725
 AIC(rqm5) # 109703.3, AIC is 621.4 better than rqm1
 
 # Log-likelihood test
 
-logLik(rqm5)
-logLik(rqm1)
+logLik(rqm5) # -54997
+logLik(rqm1) # -55357
 
 # Chi-sq
-2*c(logLik(rqm4)-logLik(rqm1))
+2*c(logLik(rqm5)-logLik(rqm1))
 
 # p-value
 pchisq(2*c(logLik(rqm5)-logLik(rqm1)), 7-5, lower.tail=FALSE)
@@ -103,7 +110,7 @@ sum(rq1_coefs[101:150,1] > 0) # 12 (24%) number opposite pattern
 # Make a figure of species effects centered at equator
 pdf("figs/muir_species_rq.pdf", height=5, width=8)
 
-  plot(dat2$lat-35, -dat2$Depth, ylim=c(-30, 30), xlim=c(-35, 35), col="grey", xlab="Latitude", ylab="Maximum depth - maximum depth at Equator (m)", axes=FALSE, type="n")
+  plot(dat2$lat, -dat2$Depth, ylim=c(-30, 30), xlim=c(-35, 35), col="grey", xlab="Latitude", ylab="Maximum depth - maximum depth at Equator (m)", axes=FALSE, type="n")
   axis(2, las=2)
   axis(1, at=seq(-30, 30, 30))
 
@@ -114,14 +121,14 @@ pdf("figs/muir_species_rq.pdf", height=5, width=8)
     # temp <- dat2[dat2$Species == i,]
     # rq_temp <- rq(Depth ~ lat + lat_sq, tau=0.975, data=temp)
     # pp <- predict(rq_temp, list(lat=ss, lat_sq=ss^2))
-    ppp <- pp - pp[which(ss==35)]
-    lines(ss-35, -ppp, col=rgb(0, 0, 0, 0.3))
+    ppp <- pp - pp[which(ss==0)]
+    lines(ss, -ppp, col=rgb(0, 0, 0, 0.3))
   }
 
   # Add Muir et al. as thicker line
   ord <- order(dat$lat)
   pp <- predict(rqm1, 0)
-  cor_lat <- dat$lat[ord]-35
+  cor_lat <- dat$lat[ord]
   cor_dep <- -pp[ord]
   lines(cor_lat, cor_dep-cor_dep[which(cor_lat==0)], lwd=3, col="black")
   box()
